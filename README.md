@@ -7,3 +7,9 @@
 
 
 It can Trace Function calls, But Spagetti Code.
+
+
+
+# Dependencies
+
+Capstone : the Dissassembler Framework
