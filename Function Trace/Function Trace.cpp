@@ -63,10 +63,17 @@ void BackEIP(HANDLE hThread) {
 	SetThreadContext(hThread, &lcContext);
 }
 
+void WaitForPressKey() {
+	do
+	{
+		std::cout << "Press any key to continue :D" << '\n';
+	} while (std::cin.get() != '\n');
+}
+
 int main()
 {
 	std::wstring imageName;
-    std::cout << "실행할 프로그램 : ";
+    std::cout << "Executing Program : ";
 	//std::wcin >> imageName;
 	imageName = std::wstring(TEXT("D:\\Kcleaner.exe"));
 	STARTUPINFO si;
@@ -99,22 +106,27 @@ int main()
 		switch (debug_event.dwDebugEventCode)
 		{
 		case CREATE_PROCESS_DEBUG_EVENT:
-			printf("새로운 프로세스 생성\n");
+			std::cout << "Created new process!" << '\n';
 		case CREATE_THREAD_DEBUG_EVENT:
+			std::cout << "Thread 0x"
+				<< static_cast<int>((unsigned int)(debug_event.u.CreateThread.hThread))
+				<< " (Id: "
+				<< debug_event.dwThreadId
+				<< ") created at: 0x"
+				<< static_cast<int>((unsigned int)debug_event.u.CreateThread.lpStartAddress)
+				<< '\n';
 
-			printf("Thread 0x%x (Id: %d) created at: 0x%x\n",
-				(unsigned int)(debug_event.u.CreateThread.hThread),
-				debug_event.dwThreadId,
-				(unsigned int)debug_event.u.CreateThread.lpStartAddress);
 			setTrapFlag(debug_event.u.CreateThread.hThread);
 			ThreadHandles[debug_event.dwThreadId] = debug_event.u.CreateThread.hThread;     //ThreadId에 대한 핸들 저장
 			ThreadCallDepth[debug_event.dwThreadId]=0;
 			break;
 
 		case EXIT_THREAD_DEBUG_EVENT:
-			printf("The thread %d exited with code: %d\n",
-				debug_event.dwThreadId,
-				debug_event.u.ExitThread.dwExitCode);    // The thread 2760 exited with code: 0
+			std::cout << "The thread "
+				<< debug_event.dwThreadId
+				<< " exited with code: "
+				<< debug_event.u.ExitThread.dwExitCode
+				<< '\n'; // The thread 2760 exited with code: 0
 
 			if (ThreadHandles.count(debug_event.dwThreadId)) {  //저장된 핸들 있으면 핸들 삭제
 				ThreadHandles.erase(debug_event.dwThreadId);
@@ -125,9 +137,10 @@ int main()
 
 			break;
 		case EXIT_PROCESS_DEBUG_EVENT:
+			std::cout << "Process exited with code: 0x"
+				<< static_cast<int>(debug_event.u.ExitProcess.dwExitCode)
+				<< '\n';
 
-			printf("Process exited with code:  0x%x",
-				debug_event.u.ExitProcess.dwExitCode);
 			debuggingState = false;
 			break;
 		case EXCEPTION_DEBUG_EVENT:
@@ -144,7 +157,7 @@ int main()
 					setTrapFlag(ThreadHandles[debug_event.dwThreadId]);
 				}
 				else {
-					printf("없는데 브포 발생\n");
+					std::cout << "There is no breaking point, but breaking has occurred!" << '\n';
 				}
 
 				ReadSomeCode(pi.hProcess, ExceptionPos, Codes, 16);  //maximun instruction length
@@ -182,11 +195,11 @@ int main()
 				}
 				break;
 			case EXCEPTION_ACCESS_VIOLATION:
-				printf("Access Violation!!!\n");
-				scanf_s("");
+				std::cout << "Access Violation!" << '\n';
+				WaitForPressKey();
 				break;
 			default:
-				printf("%x", exception.ExceptionRecord.ExceptionCode);
+				std::cout << static_cast<int>(exception.ExceptionRecord.ExceptionCode) << '\n';
 				break;
 			}
 			break;
